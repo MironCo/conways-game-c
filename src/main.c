@@ -7,8 +7,11 @@
 #include "renderer.h"
 
 int main(void) {   
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    const int screenWidth = 1066;
+    const int screenHeight = 600;
+    
+    double lastUpdateTime = 0.0;
+    double updateInterval = 0.05f;    
     
     InitWindow(screenWidth, screenHeight, "Conway's Game Of Life In C");
     SetTargetFPS(60);
@@ -16,6 +19,13 @@ int main(void) {
     grid_InitWorld();
 
     while (!WindowShouldClose()) {
+        double currentTime = GetTime();
+    
+        if (currentTime - lastUpdateTime >= updateInterval) {
+            calculateNextState();
+            lastUpdateTime = currentTime;
+        }
+
         BeginDrawing();
 
         ClearBackground(RAYWHITE);

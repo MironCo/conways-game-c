@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "cell.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "grid.h": "c"
     }
 }
