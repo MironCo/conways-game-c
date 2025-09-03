@@ -58,3 +58,5 @@ cmake_install.cmake
 
 # Make backup files
 *~
+
+game

@@ -4,8 +4,9 @@
 #include "raylib.h"
 #include "grid.h"
 
-#define CELL_SIZE 3
+#define CELL_SIZE 4
 
 void renderer_DrawFromPoint(grid_t* t, int x, int y);
+void renderer_DrawViewport(grid_t* t, Camera2D camera, int screenWidth, int screenHeight);
 
 #endif
