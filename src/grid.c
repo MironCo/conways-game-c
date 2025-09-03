@@ -111,7 +111,7 @@ void wipeNextGenerationAndCandidates() {
     world_grid.candidateDeadCells = NULL;
 }
 
-void calculateNextState(void* args) {
+void calculateNextState() {
     wipeNextGenerationAndCandidates();
     cell_t* cells = world_grid.aliveCells;
     cell_t* current_cell;

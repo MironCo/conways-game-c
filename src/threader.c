@@ -6,6 +6,7 @@ static threader_t threader = {0};
 void* threader_calculateNextStep(void *args) {
     calculateNextState();
     threader.isThreadRunning = false;
+    return NULL;
 }
 
 void threader_startCalculationIfReady() {
