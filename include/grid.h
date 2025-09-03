@@ -1,6 +1,6 @@
 #ifndef GRID_H
 #define GRID_H
-#define GRID_SIZE 300
+#define GRID_SIZE 200
 
 #include "cell.h"
 

@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <pthread.h>
 #include "grid.h"
 #include "cell.h"
 
 static grid_t world_grid = {0};
-
 
 grid_t* getGrid(void) {
     return &world_grid;
@@ -111,7 +111,7 @@ void wipeNextGenerationAndCandidates() {
     world_grid.candidateDeadCells = NULL;
 }
 
-void calculateNextState() {
+void calculateNextState(void* args) {
     wipeNextGenerationAndCandidates();
     cell_t* cells = world_grid.aliveCells;
     cell_t* current_cell;

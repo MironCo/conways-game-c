@@ -3,8 +3,8 @@
 #include "uthash.h"
 #include "cell.h"
 #include "raylib.h"
-#include "grid.h"
 #include "renderer.h"
+#include "threader.h"
 
 int main(void) {   
     const int screenWidth = 1066;
@@ -35,7 +35,7 @@ int main(void) {
         if (IsKeyDown(KEY_W)) camera.target.y -= cameraSpeed * GetFrameTime();
         
         if (currentTime - lastUpdateTime >= updateInterval) {
-            calculateNextState();
+            threader_startCalculationIfReady();
             lastUpdateTime = currentTime;
         }
 
@@ -48,7 +48,7 @@ int main(void) {
         EndMode2D();
         
         // Optional: Show controls
-        DrawText("WASD: Pan, Q/E: Zoom", 10, 10, 20, BLACK);
+        DrawText("WASD: Pan, Q/E: Zoom", 100, 100, 20, BLACK);
         
         EndDrawing();
     }
