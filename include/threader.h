@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 typedef struct {
     bool isThreadRunning;
