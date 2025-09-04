@@ -26,7 +26,7 @@ void generateRandomState() {
     for (int i = 0; i < GRID_SIZE; i++) {
         for (int j = 0; j < GRID_SIZE; j++) {
             // Generate random bool
-            bool random_bool = rand() % 5 == 0;  // 20% chance (1 in 5)
+            bool random_bool = rand() % 7 == 0;  // 1 in 7 chance
 
             if (random_bool == true) {
                 addCell(&world_grid.aliveCells, i, j);

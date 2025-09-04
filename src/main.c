@@ -11,7 +11,7 @@ int main(void) {
     const int screenHeight = 600;
     
     double lastUpdateTime = 0.0;
-    double updateInterval = 0.5f;    
+    double updateInterval = 0.25f;    
     
     InitWindow(screenWidth, screenHeight, "Conway's Game Of Life In C");
     SetTargetFPS(60);
