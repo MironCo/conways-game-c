@@ -1,9 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <pthread.h>
 #include "grid.h"
-#include "cell.h"
 
 static grid_t world_grid = {0};
 
@@ -153,6 +148,7 @@ bool determineFateOfDeadCell(cell_t *currentCell) {
     return false;
 }
 
+// old calculateNextState
 void calculateNextState() {
     wipeNextGenerationAndCandidates();
     cell_t *cells = world_grid.aliveCells;
@@ -178,3 +174,49 @@ void calculateNextState() {
     world_grid.aliveCells = world_grid.nextGeneration;
     world_grid.nextGeneration = NULL;
 }
+
+
+// for threading
+// divide original hashmap to 4 parts. (number_items /4)
+// get the remainder (number_items % 4)
+// thread one gets "0-(x/4) inclusive."
+// thread two gets "((x/4) + 1) - (2(x/4))"
+// thread three gets "(2(x/4) + 1) - (3(x/4))"
+// thread four gets "3((x/4)+1) - count"
+
+// void* threader_addCell(void* args) {
+//     gridAddCellData_t* cellData = (gridAddCellData_t*)args;
+//     pthread_mutex_lock(&(getThreader()->lock));
+//     addCell(cellData->cells, cellData->x, cellData->y);
+//     pthread_mutex_unlock(&get.lock);
+// }
+
+void* calculateNextStateBounds(void* args) {
+    gridThreadData_t* threadData = (gridThreadData_t*)args;
+    int lowerBound = threadData->lowerBound;
+    int upperBound = threadData->upperBound;
+    
+    cell_t *cells = world_grid.aliveCells;
+    cell_t *current_cell;
+    int index = 0;
+    
+    for (current_cell = cells; current_cell != NULL && index <= upperBound; current_cell = current_cell->hh.next) {
+        if (index >= lowerBound) {
+            if (determineFateOfLivingCell(current_cell) == true)
+                addCell(&getGrid()->nextGeneration, current_cell->x, current_cell->y);
+            
+            getDeadNeighborsForCell(threadData->localCandidateDeadCells, current_cell->x, current_cell->y);
+        }
+        index++;
+    }
+
+     // do the same thing for each of the dead candidates, follow rule #4 above.
+    // any cell past this point is not adjacent to the original alive cell
+    for (current_cell = threadData->localCandidateDeadCells; current_cell != NULL; current_cell = current_cell->hh.next) {
+        if (determineFateOfDeadCell(current_cell) == true)
+            addCell(&getGrid()->nextGeneration, current_cell->x, current_cell->y);
+    }
+    
+    return NULL;
+}
+

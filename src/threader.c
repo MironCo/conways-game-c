@@ -1,7 +1,10 @@
 #include "threader.h"
-#include "grid.h"
 
 static threader_t threader = {0};
+
+threader_t* getThreader() {
+    return &threader;
+}
 
 void* threader_calculateNextStep(void *args) {
     calculateNextState();

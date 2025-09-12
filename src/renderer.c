@@ -12,9 +12,6 @@ void renderer_DrawFromPoint(grid_t* t, int x, int y) {
     }
 }
 
-#include "renderer.h"
-#include "grid.h"
-
 void renderer_DrawViewport(grid_t* t, Camera2D camera, int screenWidth, int screenHeight) {
     cell_t* current_cell;
     

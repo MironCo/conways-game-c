@@ -1,0 +1,34 @@
+#ifndef COMMON_H
+#define COMMON_H
+
+#include "uthash.h"
+
+typedef struct {
+    int x;
+    int y;
+    char coord_key[32];
+    UT_hash_handle hh;
+} cell_t;
+
+typedef struct {
+    cell_t* aliveCells;
+    cell_t* nextGeneration;
+    cell_t* candidateDeadCells;
+    int generation;
+} grid_t;
+
+// Thread datas
+typedef struct {
+    int threadID;
+    int lowerBound;
+    int upperBound;
+    cell_t** localCandidateDeadCells;
+} gridThreadData_t;
+
+typedef struct {
+    int x;
+    int y;
+    cell_t** cells;
+} gridAddCellData_t;
+
+#endif
