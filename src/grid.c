@@ -203,6 +203,7 @@ void calculateNextState() {
     wipeCurrentAliveCells();
     world_grid.aliveCells = world_grid.nextGeneration;
     world_grid.nextGeneration = NULL;
+    world_grid.generation++;
 }
 
 void calculateNextStateMultithreaded() {
@@ -289,6 +290,7 @@ void calculateNextStateMultithreaded() {
     wipeCurrentAliveCells();
     world_grid.aliveCells = world_grid.nextGeneration;
     world_grid.nextGeneration = NULL;
+    world_grid.generation++;
     world_grid.updating = false;
     pthread_mutex_unlock(&world_grid.lock);
 }
