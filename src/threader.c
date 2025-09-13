@@ -7,7 +7,7 @@ threader_t* getThreader() {
 }
 
 void* threader_calculateNextStep(void *args) {
-    calculateNextState();
+    calculateNextStateMultithreaded();
     threader.isThreadRunning = false;
     return NULL;
 }

@@ -1,5 +1,4 @@
 #include "renderer.h"
-#include "grid.h"
 
 void renderer_DrawFromPoint(grid_t* t, int x, int y) {
     cell_t* current_cell;

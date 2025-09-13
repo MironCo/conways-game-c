@@ -1,6 +1,5 @@
 #include "cell.h"
 
-
 void createKey(char* dest, int x, int y) {
     snprintf(dest, 32, "%d, %d", x, y);
 }

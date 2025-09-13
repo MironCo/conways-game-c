@@ -11,6 +11,7 @@ void grid_InitWorld() {
     world_grid.aliveCells = NULL;
     world_grid.nextGeneration = NULL;
     world_grid.generation = 0;
+    pthread_mutex_init(&world_grid.lock, NULL);
 
     generateRandomState();
 }
@@ -78,6 +79,24 @@ void getDeadNeighborsForCell(cell_t **cells, int x, int y) {
         {
             // add the dead cell candidate
             if (!isCellAlive(&getGrid()->aliveCells, nx, ny) && !isCellAlive(&getGrid()->candidateDeadCells, nx, ny))
+            {
+                addCell(cells, nx, ny);
+            }
+        }
+    }
+}
+
+void getDeadNeighborsForCellThreaded(cell_t **cells, cell_t **localCandidates, int x, int y) {
+    for (int i = 0; i < 8; i++)
+    {
+        int nx = x + dx[i];
+        int ny = y + dy[i];
+
+        // bounds check
+        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE)
+        {
+            // add the dead cell candidate
+            if (!isCellAlive(&getGrid()->aliveCells, nx, ny) && !isCellAlive(localCandidates, nx, ny))
             {
                 addCell(cells, nx, ny);
             }
@@ -175,6 +194,80 @@ void calculateNextState() {
     world_grid.nextGeneration = NULL;
 }
 
+void calculateNextStateMultithreaded() {
+    wipeNextGenerationAndCandidates();
+    
+    // Count alive cells to divide work among threads
+    int cellCount = HASH_COUNT(world_grid.aliveCells);
+    
+    // If there are very few cells, just use single threaded
+    if (cellCount < 100) {
+        calculateNextState();
+        return;
+    }
+    
+    int cellsPerThread = cellCount / 4;
+    int remainder = cellCount % 4;
+    
+    pthread_t threads[4];
+    gridThreadData_t threadData[4];
+    
+    // Initialize thread data
+    for (int i = 0; i < 4; i++) {
+        threadData[i].threadID = i;
+        threadData[i].localNextGeneration = malloc(sizeof(cell_t*));
+        threadData[i].localCandidateDeadCells = malloc(sizeof(cell_t*));
+        *threadData[i].localNextGeneration = NULL;
+        *threadData[i].localCandidateDeadCells = NULL;
+        
+        threadData[i].lowerBound = i * cellsPerThread;
+        if (i == 3) {
+            threadData[i].upperBound = (i + 1) * cellsPerThread + remainder - 1;
+        } else {
+            threadData[i].upperBound = (i + 1) * cellsPerThread - 1;
+        }
+    }
+    
+    // Create threads
+    for (int i = 0; i < 4; i++) {
+        pthread_create(&threads[i], NULL, calculateNextStateBounds, &threadData[i]);
+    }
+    
+    // Wait for all threads to complete
+    for (int i = 0; i < 4; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    
+    // Merge results from all threads
+    for (int i = 0; i < 4; i++) {
+        mergeLocalResultsToMain(&threadData[i]);
+    }
+    
+    // Clean up thread-local data
+    for (int i = 0; i < 4; i++) {
+        cell_t *current, *tmp;
+        if (*threadData[i].localNextGeneration != NULL) {
+            HASH_ITER(hh, *threadData[i].localNextGeneration, current, tmp) {
+                HASH_DEL(*threadData[i].localNextGeneration, current);
+                free(current);
+            }
+        }
+        if (*threadData[i].localCandidateDeadCells != NULL) {
+            HASH_ITER(hh, *threadData[i].localCandidateDeadCells, current, tmp) {
+                HASH_DEL(*threadData[i].localCandidateDeadCells, current);
+                free(current);
+            }
+        }
+        free(threadData[i].localNextGeneration);
+        free(threadData[i].localCandidateDeadCells);
+    }
+    
+    // swap the pointers
+    wipeCurrentAliveCells();
+    world_grid.aliveCells = world_grid.nextGeneration;
+    world_grid.nextGeneration = NULL;
+}
+
 
 // for threading
 // divide original hashmap to 4 parts. (number_items /4)
@@ -184,12 +277,15 @@ void calculateNextState() {
 // thread three gets "(2(x/4) + 1) - (3(x/4))"
 // thread four gets "3((x/4)+1) - count"
 
-// void* threader_addCell(void* args) {
-//     gridAddCellData_t* cellData = (gridAddCellData_t*)args;
-//     pthread_mutex_lock(&(getThreader()->lock));
-//     addCell(cellData->cells, cellData->x, cellData->y);
-//     pthread_mutex_unlock(&get.lock);
-// }
+void mergeLocalResultsToMain(gridThreadData_t* threadData) {
+    cell_t *current_cell, *tmp;
+    
+    pthread_mutex_lock(&world_grid.lock);
+    HASH_ITER(hh, *threadData->localNextGeneration, current_cell, tmp) {
+        addCell(&world_grid.nextGeneration, current_cell->x, current_cell->y);
+    }
+    pthread_mutex_unlock(&world_grid.lock);
+}
 
 void* calculateNextStateBounds(void* args) {
     gridThreadData_t* threadData = (gridThreadData_t*)args;
@@ -202,19 +298,19 @@ void* calculateNextStateBounds(void* args) {
     
     for (current_cell = cells; current_cell != NULL && index <= upperBound; current_cell = current_cell->hh.next) {
         if (index >= lowerBound) {
-            if (determineFateOfLivingCell(current_cell) == true)
-                addCell(&getGrid()->nextGeneration, current_cell->x, current_cell->y);
+            if (determineFateOfLivingCell(current_cell) == true) {
+                addCell(threadData->localNextGeneration, current_cell->x, current_cell->y);
+            }
             
-            getDeadNeighborsForCell(threadData->localCandidateDeadCells, current_cell->x, current_cell->y);
+            getDeadNeighborsForCellThreaded(threadData->localCandidateDeadCells, threadData->localCandidateDeadCells, current_cell->x, current_cell->y);
         }
         index++;
     }
 
-     // do the same thing for each of the dead candidates, follow rule #4 above.
-    // any cell past this point is not adjacent to the original alive cell
-    for (current_cell = threadData->localCandidateDeadCells; current_cell != NULL; current_cell = current_cell->hh.next) {
-        if (determineFateOfDeadCell(current_cell) == true)
-            addCell(&getGrid()->nextGeneration, current_cell->x, current_cell->y);
+    for (current_cell = *threadData->localCandidateDeadCells; current_cell != NULL; current_cell = current_cell->hh.next) {
+        if (determineFateOfDeadCell(current_cell) == true) {
+            addCell(threadData->localNextGeneration, current_cell->x, current_cell->y);
+        }
     }
     
     return NULL;
