@@ -1,6 +1,6 @@
 #ifndef GRID_H
 #define GRID_H
-#define GRID_SIZE 250
+#define GRID_SIZE 1000
  
 #include "common.h"
 #include "cell.h"
@@ -22,6 +22,8 @@ void* calculateNextStateBounds(void* args);
 bool determineFateOfLivingCell(cell_t* currentCell);
 bool determineFateOfDeadCell(cell_t* currentCell);
 grid_t* getGrid(void);
+void setSingleThreaded(bool enabled);
+bool isSingleThreaded();
 int getNumberOfAliveNeighbors(int x, int y);
 void getDeadNeighborsForCellThreaded(cell_t **cells, cell_t **localCandidates, int x, int y);
 void printAliveCells(cell_t* cells);

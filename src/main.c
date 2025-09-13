@@ -23,6 +23,7 @@ int main(void) {
     camera.zoom = 1.0f;
 
     grid_InitWorld();
+    setSingleThreaded(false);
 
     while (!WindowShouldClose()) {
         double currentTime = GetTime();

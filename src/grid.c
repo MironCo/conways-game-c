@@ -1,4 +1,5 @@
 #include "grid.h"
+#include <unistd.h>
 
 static grid_t world_grid = {0};
 
@@ -7,10 +8,20 @@ grid_t *getGrid(void)
     return &world_grid;
 }
 
+void setSingleThreaded(bool enabled) {
+    world_grid.singleThreaded = enabled;
+}
+
+bool isSingleThreaded() {
+    return world_grid.singleThreaded;
+}
+
 void grid_InitWorld() {
     world_grid.aliveCells = NULL;
     world_grid.nextGeneration = NULL;
     world_grid.generation = 0;
+    world_grid.singleThreaded = false;
+    world_grid.updating = false;
     pthread_mutex_init(&world_grid.lock, NULL);
 
     generateRandomState();
@@ -195,7 +206,17 @@ void calculateNextState() {
 }
 
 void calculateNextStateMultithreaded() {
+    pthread_mutex_lock(&world_grid.lock);
+    world_grid.updating = true;
+    pthread_mutex_unlock(&world_grid.lock);
+    
     wipeNextGenerationAndCandidates();
+    
+    // Check if forced to single threaded mode
+    if (world_grid.singleThreaded) {
+        calculateNextState();
+        return;
+    }
     
     // Count alive cells to divide work among threads
     int cellCount = HASH_COUNT(world_grid.aliveCells);
@@ -206,14 +227,15 @@ void calculateNextStateMultithreaded() {
         return;
     }
     
-    int cellsPerThread = cellCount / 4;
-    int remainder = cellCount % 4;
+    int numThreads = 4;
+    int cellsPerThread = cellCount / numThreads;
+    int remainder = cellCount % numThreads;
     
     pthread_t threads[4];
     gridThreadData_t threadData[4];
     
     // Initialize thread data
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < numThreads; i++) {
         threadData[i].threadID = i;
         threadData[i].localNextGeneration = malloc(sizeof(cell_t*));
         threadData[i].localCandidateDeadCells = malloc(sizeof(cell_t*));
@@ -221,7 +243,7 @@ void calculateNextStateMultithreaded() {
         *threadData[i].localCandidateDeadCells = NULL;
         
         threadData[i].lowerBound = i * cellsPerThread;
-        if (i == 3) {
+        if (i == numThreads - 1) {
             threadData[i].upperBound = (i + 1) * cellsPerThread + remainder - 1;
         } else {
             threadData[i].upperBound = (i + 1) * cellsPerThread - 1;
@@ -229,22 +251,22 @@ void calculateNextStateMultithreaded() {
     }
     
     // Create threads
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < numThreads; i++) {
         pthread_create(&threads[i], NULL, calculateNextStateBounds, &threadData[i]);
     }
     
     // Wait for all threads to complete
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < numThreads; i++) {
         pthread_join(threads[i], NULL);
     }
     
     // Merge results from all threads
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < numThreads; i++) {
         mergeLocalResultsToMain(&threadData[i]);
     }
     
     // Clean up thread-local data
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < numThreads; i++) {
         cell_t *current, *tmp;
         if (*threadData[i].localNextGeneration != NULL) {
             HASH_ITER(hh, *threadData[i].localNextGeneration, current, tmp) {
@@ -263,9 +285,12 @@ void calculateNextStateMultithreaded() {
     }
     
     // swap the pointers
+    pthread_mutex_lock(&world_grid.lock);
     wipeCurrentAliveCells();
     world_grid.aliveCells = world_grid.nextGeneration;
     world_grid.nextGeneration = NULL;
+    world_grid.updating = false;
+    pthread_mutex_unlock(&world_grid.lock);
 }
 
 

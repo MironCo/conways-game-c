@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #include "uthash.h"
+#include <stdbool.h>
 #include <pthread.h>
 
 typedef struct {
@@ -11,14 +12,6 @@ typedef struct {
     UT_hash_handle hh;
 } cell_t;
 
-typedef struct {
-    cell_t* aliveCells;
-    cell_t* nextGeneration;
-    cell_t* candidateDeadCells;
-    int generation;
-    pthread_mutex_t lock;
-} grid_t;
-
 // Thread datas
 typedef struct {
     int threadID;
@@ -27,6 +20,16 @@ typedef struct {
     cell_t** localCandidateDeadCells;
     cell_t** localNextGeneration;
 } gridThreadData_t;
+
+typedef struct {
+    cell_t* aliveCells;
+    cell_t* nextGeneration;
+    cell_t* candidateDeadCells;
+    int generation;
+    bool singleThreaded;
+    bool updating;
+    pthread_mutex_t lock;
+} grid_t;
 
 typedef struct {
     int x;
