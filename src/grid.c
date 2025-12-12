@@ -30,9 +30,11 @@ void grid_InitWorld() {
 void generateRandomState() {
     srand(time(NULL));
 
-    for (int i = 0; i < GRID_SIZE; i++)
+    // Generate initial random state in a limited area, centered at origin
+    int halfSize = INITIAL_GRID_SIZE / 2;
+    for (int i = -halfSize; i < halfSize; i++)
     {
-        for (int j = 0; j < GRID_SIZE; j++)
+        for (int j = -halfSize; j < halfSize; j++)
         {
             // Generate random bool
             bool random_bool = rand() % 7 == 0; // 1 in 7 chance
@@ -68,12 +70,9 @@ int getNumberOfAliveNeighbors(int x, int y) {
         int nx = x + dx[i];
         int ny = y + dy[i];
 
-        // bounds check
-        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE)
-        {
-            if (isCellAlive(&getGrid()->aliveCells, nx, ny))
-                count++;
-        }
+        // No bounds check - infinite plane!
+        if (isCellAlive(&getGrid()->aliveCells, nx, ny))
+            count++;
     }
 
     return count;
@@ -85,14 +84,11 @@ void getDeadNeighborsForCell(cell_t **cells, int x, int y) {
         int nx = x + dx[i];
         int ny = y + dy[i];
 
-        // bounds check
-        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE)
+        // No bounds check - infinite plane!
+        // add the dead cell candidate
+        if (!isCellAlive(&getGrid()->aliveCells, nx, ny) && !isCellAlive(&getGrid()->candidateDeadCells, nx, ny))
         {
-            // add the dead cell candidate
-            if (!isCellAlive(&getGrid()->aliveCells, nx, ny) && !isCellAlive(&getGrid()->candidateDeadCells, nx, ny))
-            {
-                addCell(cells, nx, ny);
-            }
+            addCell(cells, nx, ny);
         }
     }
 }
@@ -103,14 +99,11 @@ void getDeadNeighborsForCellThreaded(cell_t **cells, cell_t **localCandidates, i
         int nx = x + dx[i];
         int ny = y + dy[i];
 
-        // bounds check
-        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE)
+        // No bounds check - infinite plane!
+        // add the dead cell candidate
+        if (!isCellAlive(&getGrid()->aliveCells, nx, ny) && !isCellAlive(localCandidates, nx, ny))
         {
-            // add the dead cell candidate
-            if (!isCellAlive(&getGrid()->aliveCells, nx, ny) && !isCellAlive(localCandidates, nx, ny))
-            {
-                addCell(cells, nx, ny);
-            }
+            addCell(cells, nx, ny);
         }
     }
 }

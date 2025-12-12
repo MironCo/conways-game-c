@@ -1,6 +1,6 @@
 #ifndef GRID_H
 #define GRID_H
-#define GRID_SIZE 1000
+#define INITIAL_GRID_SIZE 1000  // Only used for initial random generation
  
 #include "common.h"
 #include "cell.h"
