@@ -203,23 +203,27 @@ void calculateNextStateMultithreaded() {
     pthread_mutex_lock(&world_grid.lock);
     world_grid.updating = true;
     pthread_mutex_unlock(&world_grid.lock);
-    
+
     wipeNextGenerationAndCandidates();
-    
+
     // Check if forced to single threaded mode
     if (world_grid.singleThreaded) {
+        printf("Using single-threaded mode (forced)\n");
         calculateNextState();
         return;
     }
-    
+
     // Count alive cells to divide work among threads
     int cellCount = HASH_COUNT(world_grid.aliveCells);
-    
+
     // If there are very few cells, just use single threaded
     if (cellCount < 100) {
+        printf("Using single-threaded mode (%d cells < 100)\n", cellCount);
         calculateNextState();
         return;
     }
+
+    printf("Using multithreaded mode with 4 threads (%d cells)\n", cellCount);
     
     int numThreads = 4;
     int cellsPerThread = cellCount / numThreads;

@@ -18,8 +18,8 @@ int main(void) {
     SetTargetFPS(60);
 
     Camera2D camera = { 0 };
-    camera.target = (Vector2){ (float)GetScreenWidth() / 2, (float)GetScreenHeight() / 2 };
-    camera.offset = (Vector2){ screenWidth / 2, screenHeight / 2 };
+    camera.target = (Vector2){ 0.0f, 0.0f };  // Start at world origin (0,0)
+    camera.offset = (Vector2){ 533.0f, 300.0f };  // Center of screen (1066/2, 600/2)
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 
@@ -40,6 +40,26 @@ int main(void) {
         if (IsKeyDown(KEY_A)) camera.target.x -= cameraSpeed * GetFrameTime();
         if (IsKeyDown(KEY_S)) camera.target.y += cameraSpeed * GetFrameTime();
         if (IsKeyDown(KEY_W)) camera.target.y -= cameraSpeed * GetFrameTime();
+
+        // Zoom controls with mouse wheel
+        float wheel = GetMouseWheelMove();
+        if (wheel != 0) {
+            // Zoom toward center - use offset point based on testing
+            // User reported: mouse at 1/4 right, 3/4 down = center zoom
+            // That's approximately (266, 450) = (1066/4, 600*3/4)
+            Vector2 zoomPoint = { 266.0f, 450.0f };
+            Vector2 worldPosBeforeZoom = GetScreenToWorld2D(zoomPoint, camera);
+
+            // Update zoom
+            camera.zoom += wheel * 0.05f;
+            if (camera.zoom < 0.5f) camera.zoom = 0.5f;
+            if (camera.zoom > 2.0f) camera.zoom = 2.0f;
+
+            // Keep that point stable in world space
+            Vector2 worldPosAfterZoom = GetScreenToWorld2D(zoomPoint, camera);
+            camera.target.x += worldPosBeforeZoom.x - worldPosAfterZoom.x;
+            camera.target.y += worldPosBeforeZoom.y - worldPosAfterZoom.y;
+        }
 
         if (isRunning && currentTime - lastUpdateTime >= updateInterval) {
             threader_startCalculationIfReady();
@@ -68,7 +88,7 @@ int main(void) {
         Color statusColor = isRunning ? GREEN : RED;
         DrawText(statusText, 10, uiY + 25, 14, statusColor);
 
-        DrawText("WASD: Pan camera", 10, uiY + 45, 12, GRAY);
+        DrawText("WASD: Pan | Scroll: Zoom", 10, uiY + 45, 12, GRAY);
 
         EndDrawing();
     }

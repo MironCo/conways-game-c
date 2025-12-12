@@ -5,10 +5,11 @@ A high-performance implementation of Conway's Game of Life built in C using rayl
 ## Features
 
 ### ✅ Completed
+- **Infinite plane** - Cells can exist at any coordinates with no boundary limits
 - **Sparse grid representation** - Efficient memory usage using hash tables (UTHash)
 - **Multithreaded computation** - 4-thread parallel processing with local result merging
 - **Optimized rendering** - Viewport-based culling and thread-safe drawing
-- **Large grid support** - Handles grids up to 1500x1500 cells efficiently
+- **Camera controls** - Pan (WASD) and zoom (mouse wheel) to explore the infinite plane
 - **Configurable threading** - Toggle between single-threaded and multithreaded modes
 - **Race condition protection** - Mutex-protected grid access and rendering
 
@@ -19,7 +20,9 @@ A high-performance implementation of Conway's Game of Life built in C using rayl
 
 ## Technical Details
 
-- **Grid size**: Configurable via `GRID_SIZE` constant (currently 1000x1000)
+- **Infinite plane**: No grid boundaries - cells can exist anywhere within integer coordinate limits
+- **Initial generation**: Random cells seeded in a 1000x1000 area centered at origin
+- **Memory usage**: Only alive cells are stored, memory scales with pattern complexity not grid size
 - **Threading**: Automatically uses single-threaded mode for <100 alive cells
 - **Memory management**: Thread-local hashmaps prevent race conditions
 - **Rendering**: Synchronized with mutex locks to prevent visual artifacts
@@ -38,7 +41,9 @@ make
 
 ### Controls
 
-- **WASD**: pan around the simulation
+- **WASD**: Pan around the simulation
+- **Mouse wheel**: Zoom in/out (0.5x to 2.0x)
+- **Space**: Pause/resume simulation
 
 ## About Conway's Game of Life
 
